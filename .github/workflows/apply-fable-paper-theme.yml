@@ -1,0 +1,161 @@
+name: Apply Fable paper theme and add note 025
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/apply-fable-paper-theme.yml
+
+permissions:
+  contents: write
+
+jobs:
+  update-site:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply Fable paper-research theme and merge latest note
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+
+          p = Path('index.html')
+          html = p.read_text(encoding='utf-8')
+
+          css = r'''
+          /* Fable「纸面研究室」主题：暖白纸面 / 墨蓝正文 / 钢青强调 */
+          :root{
+            --paper:#faf8f4;--paper-deep:#f4f1ea;--surface:#fff;
+            --ink:#1c2733;--sub:#5c6b7a;--faint:#93a0ad;
+            --warm-line:#e7e2d7;--accent:#35597e;--accent-soft:#edf2f7;
+            --bull:#1e7a4f;--bull-soft:#ecf5ef;--bear:#b03a2e;--bear-soft:#faefed;
+            --gold:#8a6d1e;--gold-soft:#f7f2e2;
+            --serif:"Songti SC","STSong","Noto Serif CJK SC","Source Han Serif SC","SimSun",Georgia,serif;
+          }
+          html,body{background:var(--paper)!important;color:var(--ink)!important}
+          body,button,input,textarea,select,table,code,pre,
+          .brand strong,.hero h1,.chapter-header h1,.knowledge-card h2,.subsection h2,.example-card h3{
+            font-family:var(--serif)!important
+          }
+          body{font-size:15.5px!important;line-height:1.78!important;letter-spacing:.01em}
+          .sidebar{background:rgba(250,248,244,.96)!important;border-right:1px solid var(--warm-line)!important;backdrop-filter:blur(14px)}
+          .brand-mark{background:var(--accent)!important;box-shadow:none!important;border-radius:9px!important}
+          .brand small,.search-count,.sidebar-footer{color:var(--faint)!important}
+          .search-box{border:1px solid var(--warm-line)!important;border-radius:8px!important;box-shadow:none!important;background:#fff!important}
+          .search-wrap{background:linear-gradient(to bottom,rgba(250,248,244,.99) 78%,transparent)!important}
+          .nav-chapter{color:var(--ink)!important;font-weight:700!important}
+          .nav-link{color:var(--sub)!important;border-radius:6px!important}
+          .nav-link:hover,.nav-link.active{background:var(--accent-soft)!important;color:var(--accent)!important}
+          .nav-link.active::before{background:var(--accent)!important;box-shadow:none!important}
+          .main{padding-top:34px!important}
+          .container{max-width:1120px!important}
+          .hero{background:#fff!important;border:1px solid var(--warm-line)!important;border-radius:12px!important;box-shadow:0 1px 2px rgba(28,39,51,.05)!important;padding:42px 46px 36px!important}
+          .hero::after{display:none!important}
+          .eyebrow,.chapter-kicker{color:var(--accent)!important}
+          .eyebrow::before{background:var(--accent)!important}
+          .hero-subtitle,.chapter-intro{color:var(--sub)!important}
+          .stat{background:var(--paper-deep)!important;border:1px solid var(--warm-line)!important;border-radius:8px!important}
+          .stat span{color:var(--sub)!important}
+          .chapter-header h1{color:var(--ink)!important}
+          .knowledge-grid{gap:16px!important}
+          .knowledge-card,.subsection,.example-card{background:var(--surface)!important;border:1px solid var(--warm-line)!important;border-radius:10px!important;box-shadow:0 1px 2px rgba(28,39,51,.05)!important}
+          .knowledge-card:hover{transform:none!important;border-color:#c8d2dc!important;box-shadow:0 4px 14px rgba(28,39,51,.07)!important}
+          .number-badge{background:var(--accent-soft)!important;color:var(--accent)!important;border-radius:5px!important}
+          .copy-link{color:var(--faint)!important}
+          .copy-link:hover{background:var(--accent-soft)!important;color:var(--accent)!important}
+          .card-content strong,.subsection-content strong,.example-card strong{color:var(--accent)!important}
+          .card-content p:has(strong:first-child){background:var(--paper-deep)!important;border-left:3px solid var(--accent)!important;border-radius:4px!important}
+          .card-content code,.subsection-content code,.example-card code{background:var(--paper-deep)!important;color:var(--sub)!important;border-radius:4px!important}
+          .subsection h2::before{background:var(--accent)!important;border-radius:1px!important}
+          .subsection blockquote,.chapter-intro blockquote{background:var(--gold-soft)!important;border-left-color:var(--gold)!important;color:var(--ink)!important;border-radius:0 6px 6px 0!important}
+          table{border-color:var(--warm-line)!important;border-radius:7px!important}
+          thead th{background:var(--paper-deep)!important;color:var(--ink)!important}
+          tbody td{border-top-color:var(--warm-line)!important}
+          .figure-card{border-color:var(--warm-line)!important;border-radius:8px!important;box-shadow:none!important;background:#fff!important}
+          .figure-card img{border-radius:5px!important}
+          .back-top{border-color:var(--warm-line)!important;border-radius:8px!important;color:var(--accent)!important;box-shadow:0 2px 8px rgba(28,39,51,.08)!important}
+          ::selection{background:#dfe8f1!important}
+          '''
+          if 'Fable「纸面研究室」主题' not in html:
+              html = html.replace('</style>', css + '\n</style>', 1)
+
+          note_id = '为什么反向假突破会给正向突破加buff'
+          if f'id="{note_id}"' not in html:
+              nav = f'<a class="nav-link" href="#{note_id}" data-target="{note_id}">025｜为什么反向假突破会给正向突破加 buff？</a>\n'
+              ns = html.find('<a class="nav-chapter" href="#knowledge">知识盲点</a>')
+              ne = html.find('</div></div>', ns)
+              if ns != -1 and ne != -1: html = html[:ne] + nav + html[ne:]
+
+              card = f'''<article class="knowledge-card searchable" id="{note_id}" data-search="025 反向假突破 正向突破 buff 贝叶斯 条件概率 空头回补 多头买盘">
+<div class="card-topline"><span class="number-badge">025</span><button class="copy-link" aria-label="复制本节链接" data-link="#{note_id}">链接</button></div>
+<h2>为什么反向假突破会给正向突破加 buff？</h2>
+<div class="card-content">
+<p><strong>结论：</strong>这不是玄学，而是一次贝叶斯更新：反向突破失败，会削弱原方向，同时被套者止损与反向资金会给另一边提供真实订单燃料。</p>
+<p><strong>这个 buff 怎么成立？</strong></p>
+<ol>
+<li><strong>新价格被拒绝：</strong>跌破后站不住，说明市场不接受更低价格。</li>
+<li><strong>追单者被套：</strong>空头平仓本质上是买入，形成被动买盘。</li>
+<li><strong>等待确认者进场：</strong>“跌不下去”提高多头信心，主动买盘增加。</li>
+<li><strong>形成正反馈：</strong>空头回补＋多头买入，共同推动价格向另一侧推进。</li>
+</ol>
+<p><strong>概率理解：</strong><code>P(正向突破｜反向假突破＋强收回＋跟随) ＞ P(正向突破)</code>。若假突破在未来正向行情里更常见，观察到它后，正向条件概率就会上升。示意数字可以算到66.7%，但这只是数学演示，不是阿布官方统计。</p>
+<p><strong>如果……那么……</strong></p>
+<ul>
+<li><strong>如果</strong>只是影线刺破后勉强回区间，<strong>那么</strong>buff很弱。</li>
+<li><strong>如果</strong>强势收回TR并出现连续正向跟随，<strong>那么</strong>buff明显增强。</li>
+<li><strong>如果</strong>收回后又在区间中部横盘，<strong>那么</strong>信息衰减，概率可能回到接近50/50。</li>
+<li><strong>如果</strong>随后强势突破另一侧并有跟随，<strong>那么</strong>buff才真正兑现。</li>
+</ul>
+<p><strong>对我交易的启发：</strong>不要见到假突破就立刻重仓反手。更高质量的链条是：<strong>反向假突破 → 强势收回 → 正向跟随 → 第一次浅回调</strong>。链条越完整，胜率越高；确认越晚，止损往往越远，需要减仓。</p>
+<p><strong>记忆：</strong><br>反向失败既削弱一边，又给另一边送来燃料。</p>
+<p><code>Failed Breakout</code> <code>Bayes</code> <code>条件概率</code> <code>止损燃料</code></p>
+</div></article>'''
+              ks = html.find('<section class="chapter" id="knowledge"')
+              gs = html.find('<div class="knowledge-grid">', ks)
+              ge = html.find('</div>\n</section>', gs)
+              if ge != -1: html = html[:ge] + card + html[ge:]
+
+          rule = '<li><strong>如果</strong>反向假突破后强势收回TR并出现正向跟随，<strong>那么</strong>另一侧突破概率上升；若只是影线收回、没有跟随，buff很弱。</li>'
+          if '另一侧突破概率上升；若只是影线收回' not in html:
+              sec = html.find('<section class="subsection searchable" id="二-bom-与突破"')
+              ue = html.find('</ul>', sec)
+              if sec != -1 and ue != -1: html = html[:ue] + rule + html[ue:]
+
+          prob_id = '五-失败反向突破的贝叶斯buff'
+          if f'id="{prob_id}"' not in html:
+              nav = f'<a class="nav-link" href="#{prob_id}" data-target="{prob_id}">五、失败反向突破的贝叶斯 buff</a>\n'
+              ps = html.find('<a class="nav-chapter" href="#pa-概率速查">PA 概率速查</a>')
+              tn = html.find('<a class="nav-link" href="#总口诀-2"', ps)
+              if ps != -1 and tn != -1: html = html[:tn] + nav + html[tn:]
+              section = f'''<section class="subsection searchable" id="{prob_id}" data-search="失败反向突破 贝叶斯 条件概率 buff">
+<div class="subsection-title-row"><h2>五、失败反向突破的贝叶斯 buff</h2><button class="copy-link" aria-label="复制本节链接" data-link="#{prob_id}">链接</button></div>
+<div class="subsection-content">
+<p><strong>先验：</strong>TR方向通常接近50/50。</p>
+<p><strong>新证据：</strong>一侧突破失败并强势收回，说明该方向维持新价格的能力不足；被套者平仓又为另一侧提供订单燃料。</p>
+<p><strong>更新：</strong><code>P(另一侧突破｜假突破＋强收回＋跟随)</code> 高于原始先验。</p>
+<table><thead><tr><th>证据</th><th>概率影响</th><th>处理</th></tr></thead><tbody>
+<tr><td>仅影线刺破收回</td><td>小幅加分</td><td>不重仓</td></tr>
+<tr><td>实体强收回TR</td><td>中等加分</td><td>开始偏向反方向</td></tr>
+<tr><td>强收回＋连续跟随</td><td>明显加分</td><td>等浅回调介入</td></tr>
+<tr><td>收回后重新横盘</td><td>信息衰减</td><td>回到TR思维</td></tr>
+</tbody></table>
+<p><em>假突破本身只是弱证据；强势收回与后续跟随，才是主要似然项。</em></p>
+</div></section>'''
+              ts = html.find('<section class="subsection searchable" id="总口诀-2"')
+              if ts != -1: html = html[:ts] + section + html[ts:]
+
+          count = len(re.findall(r'<article class="knowledge-card searchable"', html))
+          html = re.sub(r'(<div class="stat"><strong>)\d+(</strong><span>知识盲点</span></div>)', rf'\g<1>{count}\2', html, count=1)
+          html = re.sub(r'(<div class="stat"><strong>)\d+(</strong><span>概率主题</span></div>)', r'\g<1>6\2', html, count=1)
+          html = html.replace('<title>PA 知识盲点记录 · 浅色视觉版</title>','<title>PA 价格行为知识库 · 纸面研究室</title>')
+          p.write_text(html,encoding='utf-8')
+
+      - name: Commit and push
+        run: |
+          if git diff --quiet -- index.html; then echo "No changes needed."; exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Apply Fable paper theme and add note 025"
+          git push
