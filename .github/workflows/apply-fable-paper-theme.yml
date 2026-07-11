@@ -3,8 +3,7 @@ name: Apply Fable paper theme and add note 025
 on:
   push:
     branches: [main]
-    paths:
-      - .github/workflows/apply-fable-paper-theme.yml
+  workflow_dispatch:
 
 permissions:
   contents: write
