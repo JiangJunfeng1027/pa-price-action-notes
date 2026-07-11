@@ -1,0 +1,58 @@
+name: Apply serif font
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/apply-serif-font.yml
+
+permissions:
+  contents: write
+
+jobs:
+  update-font:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Apply all-serif font override
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path("index.html")
+          html = path.read_text(encoding="utf-8")
+          marker = "/* all-serif-font-override */"
+          css = '''
+          /* all-serif-font-override */
+          body,
+          button,
+          input,
+          textarea,
+          select,
+          table,
+          code,
+          pre,
+          .brand strong,
+          .hero h1,
+          .chapter-header h1 {
+            font-family: "Songti SC", "STSong", "Noto Serif CJK SC", "Source Han Serif SC", "SimSun", Georgia, "Times New Roman", serif !important;
+          }
+          '''
+
+          if marker not in html:
+              html = html.replace("</style>", css + "\n</style>", 1)
+              path.write_text(html, encoding="utf-8")
+
+      - name: Commit and push
+        run: |
+          if git diff --quiet -- index.html; then
+            echo "No changes needed."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Use serif font across website"
+          git push
