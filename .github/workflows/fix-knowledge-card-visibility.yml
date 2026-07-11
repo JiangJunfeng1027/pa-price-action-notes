@@ -1,0 +1,53 @@
+name: Fix knowledge card visibility
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/fix-knowledge-card-visibility.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fix-visibility:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Make knowledge cards visible
+        shell: python
+        run: |
+          from pathlib import Path
+
+          p = Path("index.html")
+          html = p.read_text(encoding="utf-8")
+          marker = "/* knowledge-card-visibility-fix */"
+          css = '''
+          /* knowledge-card-visibility-fix */
+          .searchable {
+            opacity: 1 !important;
+            transform: none !important;
+          }
+          .searchable.in-view {
+            opacity: 1 !important;
+            transform: none !important;
+          }
+          '''
+
+          if marker not in html:
+              html = html.replace("</style>", css + "\n</style>", 1)
+              p.write_text(html, encoding="utf-8")
+
+      - name: Commit and push
+        run: |
+          if git diff --quiet -- index.html; then
+            echo "No changes needed."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Fix invisible knowledge cards"
+          git push
